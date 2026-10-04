@@ -19,9 +19,9 @@ jobs:
 
       - name: Android SDK yolunu ayarla
         run: |
-          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "/usr/local/lib/android/sdk/platform-tools" >> "$GITHUB_PATH"
 
       - name: Android SDK lisanslarını kabul et
         run: |
@@ -35,7 +35,12 @@ jobs:
 
       - name: ZIP'i aç
         run: |
+          rm -rf project
+          mkdir project
           unzip -q YeniKoza-main.zip -d project
+
+      - name: Proje klasörünü kontrol et
+        run: |
           echo "Proje içeriği:"
           find project -maxdepth 3 -type f | head -100
 
@@ -43,6 +48,23 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.3.1'
+
+      - name: Debug keystore oluştur
+        run: |
+          keytool -genkeypair \
+            -v \
+            -keystore project/YeniKoza-main/debug.keystore \
+            -storepass android \
+            -keypass android \
+            -alias androiddebugkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Keystore kontrolü
+        run: |
+          ls -lh project/YeniKoza-main/debug.keystore
 
       - name: APK oluştur
         working-directory: project/YeniKoza-main
@@ -54,3 +76,4 @@ jobs:
         with:
           name: YeniKoza-APK
           path: project/YeniKoza-main/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
