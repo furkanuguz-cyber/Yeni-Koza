@@ -5,10 +5,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Repository'yi indir
+      - name: Projeyi indir
         uses: actions/checkout@v4
 
       - name: Java 17 kur
@@ -17,33 +17,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Android SDK kur
-        uses: android-actions/setup-android@v3
-
-      - name: Projeyi ZIP'ten çıkar
+      - name: Android SDK lisanslarını kabul et
         run: |
-          unzip -q YeniKoza-main.zip
-          echo "ZIP içeriği:"
-          find . -maxdepth 3 -type f | head -100
+          yes | sdkmanager --licenses || true
 
-      - name: Android projesini bul
-        id: project
+      - name: Gerekli Android SDK paketlerini kur
         run: |
-          PROJECT_DIR=$(find . -name settings.gradle -o -name settings.gradle.kts | head -1 | xargs dirname)
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-36"
+          sdkmanager "build-tools;36.0.0"
+
+      - name: ZIP'i aç
+        run: |
+          unzip -q YeniKoza-main.zip -d project
+          echo "Proje dosyaları:"
+          ls -la project/YeniKoza-main
 
       - name: Gradle ile APK oluştur
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+        working-directory: project/YeniKoza-main
+        run: |
+          gradle assembleDebug --no-daemon
 
-      - name: APK derle
-        working-directory: ${{ steps.project.outputs.PROJECT_DIR }}
-        run: gradle assembleDebug --no-daemon
-
-      - name: APK'yı yükle
+      - name: APK'yı GitHub'a yükle
         uses: actions/upload-artifact@v4
         with:
           name: YeniKoza-APK
-          path: |
-            **/build/outputs/apk/debug/*.apk
+          path: project/YeniKoza-main/app/build/outputs/apk/debug/*.apk
