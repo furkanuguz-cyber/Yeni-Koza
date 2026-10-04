@@ -17,6 +17,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Android SDK yolunu ayarla
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "/usr/local/lib/android/sdk/platform-tools" >> $GITHUB_PATH
+
       - name: Android SDK lisanslarını kabul et
         run: |
           yes | sdkmanager --licenses || true
@@ -30,10 +36,15 @@ jobs:
       - name: ZIP'i aç
         run: |
           unzip -q YeniKoza-main.zip -d project
-          echo "Proje dosyaları:"
-          ls -la project/YeniKoza-main
+          echo "Proje içeriği:"
+          find project -maxdepth 3 -type f | head -100
 
-      - name: Gradle ile APK oluştur
+      - name: Gradle kur
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: APK oluştur
         working-directory: project/YeniKoza-main
         run: |
           gradle assembleDebug --no-daemon
@@ -42,4 +53,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: YeniKoza-APK
-          path: project/YeniKoza-main/app/build/outputs/apk/debug/*.apk
+          path: project/YeniKoza-main/**/build/outputs/apk/debug/*.apk
